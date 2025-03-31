@@ -16,13 +16,13 @@ if str(lib_dir) not in sys.path:
     sys.path.insert(0, str(lib_dir))
 
 
-from models.resnet import resnet18
-from models.vision_transformer import vit_tiny_patch16_224, vit_small_patch16_224, vit_base_patch16_224
-from options import args_parser
-from update import LocalUpdate, LocalTest
-from models.models import ProjandDeci
-from models.multibackbone import alexnet, vgg11, mlp_m
-from utils import add_noise_proto, prepare_data_real_noniid, prepare_data_domainnet_noniid, prepare_data_office_noniid, prepare_data_digits_noniid, prepare_data_caltech_noniid, prepare_data_mnistm_noniid, average_weights, exp_details, proto_aggregation, agg_func, prepare_data_digits, prepare_data_office, prepare_data_domainnet
+from lib.models.resnet import resnet18
+from lib.models.vision_transformer import vit_tiny_patch16_224, vit_small_patch16_224, vit_base_patch16_224
+from lib.options import args_parser
+from lib.update import LocalUpdate, LocalTest
+from lib.models.models import ProjandDeci
+from lib.models.multibackbone import alexnet, vgg11, mlp_m
+from lib.utils import add_noise_proto, prepare_data_real_noniid, prepare_data_domainnet_noniid, prepare_data_office_noniid, prepare_data_digits_noniid, prepare_data_caltech_noniid, prepare_data_mnistm_noniid, average_weights, exp_details, proto_aggregation, agg_func, prepare_data_digits, prepare_data_office, prepare_data_domainnet
 
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -136,9 +136,9 @@ def FedAvg(args, summary_writer, train_dataset_list, test_dataset_list, user_gro
     return acc_mtx
 
 def FedPCL(args, summary_writer, train_dataset_list, test_dataset_list, user_groups, user_groups_test, backbone_list, local_model_list):
-    global_protos = {}
-    global_avg_protos = {}
-    local_protos = {}
+    global_protos = {} # 暂存未更新的局部原型
+    global_avg_protos = {} # 存放全局聚合原型
+    local_protos = {} # 存放当前轮次的局部原型
 
     for round in tqdm(range(args.rounds)):
         print(f'\n | Global Training Round : {round} |\n')
@@ -147,7 +147,7 @@ def FedPCL(args, summary_writer, train_dataset_list, test_dataset_list, user_gro
         for idx in idxs_users:
             local_model = LocalUpdate(args=args, dataset=train_dataset_list[idx], idxs=user_groups[idx])
             w, w_urt, loss, protos = local_model.update_weights_lg(args, idx, global_protos, global_avg_protos, backbone_list=backbone_list, model=copy.deepcopy(local_model_list[idx]), global_round=round)
-            agg_protos = agg_func(protos)
+            agg_protos = agg_func(protos) # 聚合同标签下不同样本的原型
             if args.add_noise_proto:
                 agg_protos = add_noise_proto(args.device, agg_protos, args.scale, args.perturb_coe, args.noise_type)
 

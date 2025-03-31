@@ -124,7 +124,7 @@ class LocalUpdate(object):
                 images = torch.cat([images[0], images[1]], dim=0)
                 images, labels = images.to(self.device), labels.to(self.device)
 
-                # generate representations by different backbone
+                # 生成不同本地 backbone 的原型
                 with torch.no_grad():
                     for i in range(len(backbone_list)):
                         backbone = backbone_list[i]
@@ -253,7 +253,7 @@ class LocalUpdate(object):
                     agg_protos_label[labels[i].item()].append(features[i, :])
                 else:
                     agg_protos_label[labels[i].item()] = [features[i, :]]
-
+        # 返回标签-样本原型集
         return agg_protos_label
 
 class LocalTest(object):
